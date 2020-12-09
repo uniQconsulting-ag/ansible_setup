@@ -134,6 +134,9 @@
       cd {{ playbook_dir }}
       git add . --all
       git commit -m "Auto-Update $(date)"
-      git push origin master
+  
+  - name: Push
+    debug:
+      msg: DO A GIT PUSH NOW
 
 

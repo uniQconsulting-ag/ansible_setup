@@ -1,7 +1,7 @@
 #!/bin/bash -e
 # DESC: setup ansible control host
-# DATE: 20200114
-# WHO: Chris Ruettimann cruettimann@uniqconsulting.ch
+# DATE: 20201209
+# WHO: Melvin Suter (uniQconsulting AG)
 
 
 PDIR=/etc/ansible/projects
@@ -25,7 +25,12 @@ cd $PDIR
 git clone https://github.com/uniQconsulting-ag/ansible.os_basis_setup_project.git $PNAME
 cd $PDIR/$PNAME
 test -d roles && rm -rf roles
-ansible-galaxy install uniqconsulting.open_vm_tools uniqconsulting.os_basic uniqconsulting.iptables
+ansible-galaxy install uniqconsulting.open_vm_tools uniqconsulting.os_basic uniqconsulting.firewall
+
+rm -rf $PIDR/$PNAME/roles/uniqconsulting.os_basic/tests/install_X_*.yml
+rm -rf $PIDR/$PNAME/roles/uniqconsulting.open_vm_tools/tests/install_X_*.yml
+rm -rf $PIDR/$PNAME/roles/uniqconsulting.firewall/tests/install_X_*.yml
+rm -rf $PIDR/$PNAME/install_0_prep_ansible.sh
 
 ansible-galaxy search uniqconsulting | cat
 

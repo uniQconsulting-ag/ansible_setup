@@ -3,7 +3,7 @@
 - name: basis setup
   hosts: localhost
   vars:
-    readme_hostname: HetzRoute
+    readme_hostname: "{{ ansible_hostname }}"
   tasks:
   - name: Clear README
     shell: "> {{ playbook_dir }}/README.md"

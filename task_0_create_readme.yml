@@ -1,0 +1,69 @@
+#!/usr/bin/ansible-playbook 
+---
+- name: basis setup
+  hosts: localhost
+  vars:
+    readme_hostname: HetzRoute
+  tasks:
+  - name: Clear README
+    shell: "> {{ playbook_dir }}/README.md"
+
+  - name: Get Figlet
+    uri:
+      url: "https://dist.damon.ch/figlet/?{{ readme_hostname }}"
+      validate_certs: no
+      return_content: yes
+    register: figlet_output
+
+  - name: Write Header
+    copy:
+      dest: "{{ playbook_dir }}/README.md"
+      content: "```\n{{ figlet_output.content }}\n```\n\nInstalled Ansible-Roles:\n"
+
+  - name: Get installed Roles
+    find:
+      paths: "{{ playbook_dir }}/roles"
+      recurse: no
+      file_type: directory
+    register: find_result
+
+  - name: Add installed Roles
+    lineinfile:
+      path: "{{ playbook_dir }}/README.md"
+      line: "- {{ item.path | basename }}"
+    with_items: "{{ find_result.files }}"
+    loop_control:
+      label: "{{ item.path | basename }}"
+
+  - name: Add Role motd
+    shell: |
+      test -f {{ item.path }}/motd.md && \
+      echo "" >> {{ playbook_dir }}/README.md && \
+      echo "------------ {{ item.path | basename }} ------------" >> {{ playbook_dir }}/README.md && \
+      cat {{ item.path }}/motd.md >> {{ playbook_dir }}/README.md
+    with_items: "{{ find_result.files }}"
+    ignore_errors: yes
+    no_log: True
+    loop_control:
+      label: "{{ item.path | basename }}"
+
+  - name: Add project motd
+    shell: |
+      test -f {{ playbook_dir }}/motd.md && \
+      echo "" >> {{ playbook_dir }}/README.md && \
+      echo "------------ {{ playbook_dir | basename }} ------------" >> {{ playbook_dir }}/README.md && \
+      cat {{ playbook_dir }}/motd.md >> {{ playbook_dir }}/README.md
+    ignore_errors: yes
+    no_log: True
+
+  - name: Remove motd
+    file:
+      path: /etc/motd
+      state: absent
+
+  - name: Link motd
+    file:
+      dest: /etc/motd
+      state: link
+      src: "{{ playbook_dir }}/README.md"
+

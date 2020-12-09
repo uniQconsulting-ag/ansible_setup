@@ -1,0 +1,5 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Check Server State
+  hosts: localhost
+- import_playbook: uQcCheck/uQcCheck_Base.yml

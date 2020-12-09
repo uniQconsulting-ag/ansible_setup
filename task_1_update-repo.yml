@@ -1,0 +1,139 @@
+#!/usr/bin/ansible-playbook 
+---
+- name: basis setup
+  hosts: localhost
+  vars:
+    store_path: "{{ playbook_dir }}/host_config"
+
+    modules:
+    # Default
+    - os
+    - ssh
+    - cron
+    - rpm
+    
+    system_files:
+      # os
+    - module: os
+      path: /root/anaconda-ks.cfg
+    - module: os
+      path: /etc/fstab
+      # ssh
+    - module: ssh
+      path: /root/.ssh/config
+    - module: ssh
+      path: /root/.ssh/authorized_keys
+    - module: ssh
+      path: /etc/ssh/sshd_config
+
+    system_commands:
+      # os
+    - module: os
+      command: ifconfig
+      name: output_ifconfig
+    - module: os
+      command: lsblk
+      name: output_lsblk
+    - module: os
+      command: hostname
+      name: output_hostname
+    - module: os
+      command: firewall-cmd --list-all-zones
+      name: output_firewalld
+    - module: os
+      command: iptables-save
+      name: output_iptables
+      # cron
+    - module: cron
+      command: crontab -u root -l
+      name: crontab_root
+      # rpm
+    - module: rpm
+      command: rpm -qa
+      name: package_list_full
+
+
+    system_folders:
+      # cron
+    - module: cron
+      path: /etc/cron.daily 
+    - module: cron
+      path: /etc/cron.d 
+    - module: cron
+      path: /etc/cron.hourly 
+    - module: cron
+      path: /etc/cron.weekly 
+    - module: cron
+      path: /etc/cron.monthly 
+
+
+  tasks:
+  - name: Create Dir
+    file:
+      path: "{{ store_path }}"
+      state: directory
+
+
+
+  - name: Prepare Folders
+    file:
+      path: "{{ store_path }}/{{ item }}"
+      state: directory
+    with_items: "{{ modules }}"
+
+
+
+  - name: Copy System-Files
+    shell: cp {{ item.path }} {{ store_path }}/{{ item.module }}
+    with_items: "{{ system_files }}"
+    loop_control:
+      label: "{{ item.path }}"
+    args:
+      warn: false
+    ignore_errors: true
+
+  - name: Copy System-Folders
+    shell: cp -r {{ item.path }} {{ store_path }}/{{ item.module }}/
+    with_items: "{{ system_folders }}"
+    loop_control:
+      label: "{{ item.path }}"
+    args:
+      warn: false
+    ignore_errors: true
+
+  - name: Capture System-Commands
+    shell: "{{ item.command }} > {{ store_path }}/{{ item.module }}/{{ item.name }}"
+    with_items: "{{ system_commands }}"
+    loop_control:
+      label: "{{ item.name }}"
+    ignore_errors: true
+
+  - name: Create RPM-Config Dir
+    file:
+      path: "{{ store_path }}/rpm_changed_files"
+      state: directory
+
+  - name: Get changed files
+    shell: rpm -qa | xargs rpm -V | grep -v "/etc/motd" | grep -v "/var/cache/dnf/packages.db" | grep -v "/etc/kdump.conf" | grep -v "/etc/ansible/ansible.cfg" | grep -v "/etc/crypto-policies/back-ends/nss.config" | grep -v "/var/log" | grep -v -e "^missing" | grep -v "/etc/aliases" | grep -v "/etc/ssh/sshd_config" | grep -v "/etc/postfix/canonical" | grep -v "/etc/postfix/main.cf" | grep -v "/etc/selinux" | grep -v "/var/lib/selinux" | grep -v "/var/lib/plymouth/boot-duration" | grep -v "/run/dbus" | sed -e "s;^\(.*\) \/\(.*\);\2;"
+    register: rpm_changed_files
+  
+  - name: Prepare changed files
+    file:
+      path: "{{ store_path }}/rpm_changed_files/{{ item | dirname }}"
+      state: directory
+    with_items: "{{ rpm_changed_files.stdout.splitlines() }}"
+
+  - name: Copy changed files
+    copy:
+      src: "/{{ item }}"
+      dest: "{{ store_path }}/rpm_changed_files/{{ item }}"
+    with_items: "{{ rpm_changed_files.stdout.splitlines() }}"
+
+  - name: Update Git Repo
+    shell: |
+      cd {{ playbook_dir }}
+      git add . --all
+      git commit -m "Auto-Update $(date)"
+      git push origin master
+
+

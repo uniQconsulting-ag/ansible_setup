@@ -1,0 +1,144 @@
+#!/usr/bin/ansible-playbook
+---
+- name: Check Server State
+  hosts: localhost
+  vars:
+    # In MB
+    memory_nocache_free: 256
+    memory_physical_free: 128
+    memory_swap_total: 1
+    memory_swap_free: 256
+
+    # In Bytes
+    disk_size_available: 1073741824‬ # 1GB
+    disk_inode_available: 1024
+
+    cpu_load_15: 1
+  tasks:
+
+  - name: Check Uptime
+    fail:
+      msg: This system has been restarted recently (last 30min)
+    failed_when: ansible_uptime_seconds < 1800
+    ignore_errors: yes
+
+  ##################
+  #    MEMORY
+  ##################
+
+  - name: Check Physical Memory
+    fail:
+      msg: This system has no physical memory left
+    failed_when: ansible_memory_mb.real.free < memory_physical_free
+    ignore_errors: yes
+
+  - name: Check Swap Memory
+    fail:
+      msg: This system has no swap configured
+    failed_when: ansible_memory_mb.swap.total < memory_swap_total or ansible_memory_mb.swap.free < memory_swap_free
+    ignore_errors: yes
+
+  - name: Check nocache Memory
+    fail:
+      msg: This system is running low on memory
+    failed_when: ansible_memory_mb.nocache.free < memory_nocache_free
+    ignore_errors: yes
+
+  - name: Check Memory
+    debug:
+      msg:
+        - "Free physical memory: {{ ansible_memory_mb.real.free }}"
+        - "Total swap memory: {{ ansible_memory_mb.swap.total }}"
+        - "Free swap memory: {{ ansible_memory_mb.swap.free }}"
+        - "Free nocache memory: {{ ansible_memory_mb.nocache.free }}"
+    when: 
+      - ansible_memory_mb.real.free < memory_physical_free or
+        ansible_memory_mb.swap.total < memory_swap_total or
+        ansible_memory_mb.swap.free < memory_swap_free or
+        ansible_memory_mb.nocache.free < memory_nocache_free
+     
+
+
+  ##################
+  #     DISK
+  ##################
+
+  - name: Check disk size
+    debug:
+      msg: Disk {{ item.device }} mounted on {{ item.mount }} is running low on space
+    failed_when: item.size_available < disk_size_available
+    when: item.size_available < disk_size_available
+    ignore_errors: yes
+    with_items: "{{ ansible_mounts }}"
+    loop_control:
+      label: "{{ item.device }}"
+
+  - name: Check disk inodes
+    debug:
+      msg: Disk {{ item.device }} mounted on {{ item.mount }} is running low on inodes
+    failed_when: item.inode_available < disk_inode_available and item.inode_total > 0
+    when: item.inode_available < disk_inode_available and item.inode_total > 0
+    ignore_errors: yes
+    with_items: "{{ ansible_mounts }}"
+    loop_control:
+      label: "{{ item.device }}"
+
+  - name: Check disk
+    debug:
+      msg:
+        - "UUID: {{ item.uuid }}"
+        - "Device: {{ item.device }}"
+        - "Mount Point: {{ item.mount }}"
+        - "FS Type: {{ item.fstype }}"
+        - "Options: {{ item.options }}"
+        - "Disk Size MB: {{ (item.size_total / 1024 / 1024) | int }}"
+        - "Disk Free MB: {{ (item.size_available / 1024 / 1024) | int }}"
+        - "Inodes Free: {{ item.inode_available }}"
+    when: 
+    - item.size_available < disk_size_available or
+      (item.inode_available < disk_inode_available  and item.inode_total)
+    with_items: "{{ ansible_mounts }}"
+    loop_control:
+      label: "{{ item.device }}"
+    
+
+
+  ##################
+  #     CPU
+  ##################
+
+  - name: get cpu load
+    shell: "uptime | sed -e 's;\\(.*\\)load average: \\(.*\\);\\2;' | awk -F',' '{ print $3 }'"
+    register: cpu_load_shell
+    changed_when: false
+
+  - name: Check CPU Load
+    debug:
+      msg: Average CPU Load in the last 15min has been high {{ cpu_load_shell.stdout }}
+    failed_when: (cpu_load_shell.stdout|float) / ansible_processor_vcpus > cpu_load_15
+    when: (cpu_load_shell.stdout|float) / ansible_processor_vcpus > cpu_load_15 
+    ignore_errors: yes
+
+    
+
+
+  ##################
+  #    Network
+  ##################
+
+  - name: Ping Gateway ({{ ansible_default_ipv4.gateway }})
+    shell: ping -c 1 -w 2 "{{ ansible_default_ipv4.gateway }}"
+    changed_when: false
+    ignore_errors: yes
+
+  - name: Ping 1.1.1.1
+    shell: ping -c 1 -w 2 1.1.1.1
+    changed_when: false
+    ignore_errors: yes
+
+  - name: Ping one.one.one.one 
+    shell: ping -c 1 -w 2 one.one.one.one 
+    changed_when: false
+    ignore_errors: yes
+
+

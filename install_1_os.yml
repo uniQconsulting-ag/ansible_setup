@@ -1,0 +1,10 @@
+#!/usr/bin/ansible-playbook 
+---
+- name: basis setup
+  hosts: localhost
+  roles:
+    - uniqconsulting.os_basic
+    - uniqconsulting.open_vm_tools
+    - uniqconsulting.iptables
+    # - uniqconsulting.geoip
+...

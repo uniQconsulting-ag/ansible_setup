@@ -6,7 +6,7 @@
 
 PDIR=/etc/ansible/projects
 PNAME=uqcSetup
-for PKG in git epel-release wget curl ansible
+for PKG in git epel-release wget curl ansible python3-netaddr
 do
    rpm -q $PKG >/dev/null 2>&1 && echo $PKG is already installed || yum -y install $PKG
 done

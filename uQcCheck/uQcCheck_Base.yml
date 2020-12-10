@@ -4,13 +4,13 @@
   hosts: localhost
   vars:
     # In MB
-    memory_nocache_free: 256
+    memory_nocache_free: 512
     memory_physical_free: 128
-    memory_swap_total: 1
-    memory_swap_free: 256
+    memory_swap_total: 1024
+    memory_swap_free: 1024
 
     # In Bytes
-    disk_size_available: 1073741824‬ # 1GB
+    disk_size_available: 1073741824 # 1GB
     disk_inode_available: 1024
 
     cpu_load_15: 1
@@ -96,7 +96,7 @@
         - "Inodes Free: {{ item.inode_available }}"
     when: 
     - item.size_available < disk_size_available or
-      (item.inode_available < disk_inode_available  and item.inode_total)
+      (item.inode_available < disk_inode_available and item.inode_total)
     with_items: "{{ ansible_mounts }}"
     loop_control:
       label: "{{ item.device }}"

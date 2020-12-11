@@ -27,10 +27,10 @@ cd $PDIR/$PNAME
 test -d roles && rm -rf roles
 ansible-galaxy install uniqconsulting.open_vm_tools uniqconsulting.os_basic uniqconsulting.firewall
 
-rm -rf $PIDR/$PNAME/roles/uniqconsulting.os_basic/tests/install_X_*.yml
-rm -rf $PIDR/$PNAME/roles/uniqconsulting.open_vm_tools/tests/install_X_*.yml
-rm -rf $PIDR/$PNAME/roles/uniqconsulting.firewall/tests/install_X_*.yml
-rm -rf $PIDR/$PNAME/install_0_prep_ansible.sh
+rm -rf $PDIR/$PNAME/roles/uniqconsulting.os_basic/tests/install_X_*.yml
+rm -rf $PDIR/$PNAME/roles/uniqconsulting.open_vm_tools/tests/install_X_*.yml
+rm -rf $PDIR/$PNAME/roles/uniqconsulting.firewall/tests/install_X_*.yml
+rm -rf $PDIR/$PNAME/install_0_prep_ansible.sh
 
 ansible-galaxy search uniqconsulting | cat
 

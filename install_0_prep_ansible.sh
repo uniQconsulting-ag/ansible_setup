@@ -26,6 +26,7 @@ git clone https://github.com/uniQconsulting-ag/ansible_setup.git $PNAME
 cd $PDIR/$PNAME
 test -d roles && rm -rf roles
 ansible-galaxy install uniqconsulting.open_vm_tools uniqconsulting.os_basic uniqconsulting.firewall
+ansible-galaxy collection install community.mysql
 
 rm -rf $PDIR/$PNAME/roles/uniqconsulting.os_basic/tests/install_X_*.yml
 rm -rf $PDIR/$PNAME/roles/uniqconsulting.open_vm_tools/tests/install_X_*.yml

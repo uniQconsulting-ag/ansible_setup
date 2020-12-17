@@ -5,6 +5,5 @@
   roles:
     - uniqconsulting.os_basic
     - uniqconsulting.open_vm_tools
-    # - uniqconsulting.geoip
     - uniqconsulting.firewall
 ...
